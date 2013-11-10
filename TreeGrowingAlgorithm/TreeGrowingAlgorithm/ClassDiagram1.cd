@@ -24,7 +24,7 @@
       </Delegate>
     </NestedTypes>
     <TypeIdentifier>
-      <HashCode>AAAEAAAAAAQcCAAAAAgAAAAAFAEAABACIAEAABFAAAA=</HashCode>
+      <HashCode>AAAEAAAAAAQcCAAAAAgAAAAAFAEAABACIAEAABFABAA=</HashCode>
       <FileName>Tree2D.cs</FileName>
     </TypeIdentifier>
     <ShowAsCollectionAssociation>
@@ -36,12 +36,6 @@
     <Compartments>
       <Compartment Name="Fields" Collapsed="true" />
     </Compartments>
-    <InheritanceLine Type="TreeGrowingAlgorithm.Tree3D" FixedFromPoint="true">
-      <Path>
-        <Point X="8" Y="11.347" />
-        <Point X="8" Y="12.5" />
-      </Path>
-    </InheritanceLine>
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAQAAAAAAAAAAAAAFAAAABAAAAAAAAAAAAA=</HashCode>
       <FileName>Tree3D.cs</FileName>
@@ -65,7 +59,7 @@
       </Path>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>AAAEAAAAAAQcCAAAAAgAAAAABAEAAAACIAEAABFAAAA=</HashCode>
+      <HashCode>AAAEAAAAAAQcCAAAAAgAAAAABAEAAAACIAEAABFABAA=</HashCode>
       <FileName>Tree3D.cs</FileName>
     </TypeIdentifier>
     <ShowAsCollectionAssociation>
@@ -78,7 +72,7 @@
       <Compartment Name="Fields" Collapsed="true" />
     </Compartments>
     <TypeIdentifier>
-      <HashCode>QACAAEAKhAABCAYMAU4EFAAGBBAAAKQIBIAAQADAAEA=</HashCode>
+      <HashCode>QADAAEAKhAABCAYMAU4EFAAGBBAAAKQIBIAAQADAREA=</HashCode>
       <FileName>TreeBase.cs</FileName>
     </TypeIdentifier>
   </Class>

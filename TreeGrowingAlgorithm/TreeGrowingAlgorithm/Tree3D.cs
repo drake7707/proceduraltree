@@ -69,12 +69,6 @@ namespace TreeGrowingAlgorithm
 
         public Tree3D()
         {
-            rnd = new Random();
-        }
-
-        public Tree3D(Random rnd)
-        {
-            this.rnd = rnd;
         }
 
         protected List<Particle3D> particles = new List<Particle3D>(100000);
@@ -97,11 +91,19 @@ namespace TreeGrowingAlgorithm
         public Size3D Boundaries { get; set; }
 
 
-
+        protected override void OnRandomSeedChanged()
+        {
+            rnd = new Random(RandomSeed);
+        }
 
 
         public virtual void BuildTree()
         {
+            if (RandomSeed == 0)
+                rnd = new Random();
+            else
+                rnd = new Random(RandomSeed);
+
             particles.Clear();
 
 
@@ -250,7 +252,7 @@ namespace TreeGrowingAlgorithm
             // thicking
             int maxTrunkLife = (int)(((float)trunk.Life / (float)trunk.MaxLife) * (thickHeightRatio * trunk.MaxLife));
 
-            double piTimes2=  (2 * Math.PI);
+            double piTimes2 = (2 * Math.PI);
             var trunkRotatedOnZ = trunk.Direction.RotateZ(-Math.PI / 2);
 
             // spawn particles in every possible direction

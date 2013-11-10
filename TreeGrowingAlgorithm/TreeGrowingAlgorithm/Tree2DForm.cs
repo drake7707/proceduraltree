@@ -14,6 +14,7 @@ namespace TreeGrowingAlgorithm
     {
 
         private Bitmap bmp;
+        private Graphics bmpG;
 
         public Tree2DForm()
         {
@@ -29,14 +30,13 @@ namespace TreeGrowingAlgorithm
             tree.PixelSet += (oldx, oldy, x, y, c) =>
             {
                 // when a pixel is set, daw the path from the old position to the new one
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
+                
                     using (Pen p = new Pen(c, 2f))
                     {
                         if (oldx != default(int) && oldy != default(int))
-                            g.DrawLine(p, new Point(oldx, tree.Boundaries.Height - 1 - oldy), new Point(x, tree.Boundaries.Height - 1 - y));
+                            bmpG.DrawLine(p, new Point(oldx, tree.Boundaries.Height - 1 - oldy), new Point(x, tree.Boundaries.Height - 1 - y));
                     }
-                }
+                
                 //bmp.SetPixel(x, tree.Boundaries.Height - 1 - y, c);
             };
             propGrid.SelectedObject = tree;
@@ -63,8 +63,16 @@ namespace TreeGrowingAlgorithm
 
                 stop = false;
 
+                if (bmp != null)
+                {
+                    bmpG.Dispose();
+                    bmp.Dispose();
+                }
+
                 // create a new bitmap
                 bmp = new Bitmap(pic.Width, pic.Height);
+                bmpG = Graphics.FromImage(bmp);
+
                 pic.Image = bmp;
 
                 

@@ -9,6 +9,27 @@ namespace TreeGrowingAlgorithm
 {
     public class TreeBase
     {
+        
+        private int randomSeed;
+        [Description(@"Sets a fixed seed for the rng. If 0, it will choose a random seed")]
+        public int RandomSeed
+        {
+            get { return randomSeed; }
+            set
+            {
+                if (randomSeed != value)
+                {
+                    randomSeed = value;
+                    OnRandomSeedChanged();
+                }
+            }
+        }
+
+        protected virtual void OnRandomSeedChanged()
+        {
+        }
+
+
         #region trunk
         protected int maxLife = 400;
         /// <summary>
