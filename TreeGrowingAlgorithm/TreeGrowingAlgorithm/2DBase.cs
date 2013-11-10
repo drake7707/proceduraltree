@@ -24,7 +24,7 @@ namespace TreeGrowingAlgorithm
         /// <summary>
         /// The direction the particle is going
         /// </summary>
-        public Vector2D Direction { get; set; }
+        public Vector2D Direction;
 
         /// <summary>
         /// The maximum life the particle has

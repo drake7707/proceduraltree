@@ -9,10 +9,10 @@ namespace TreeGrowingAlgorithm
 {
     public class Tree2D : TreeBase
     {
-        private Random rnd = new Random();
+        private Random rnd;
 
         private List<Particle2D> particles = new List<Particle2D>(100000);
-        
+
         /// <summary>
         /// The particles in currently used to build the tree
         /// </summary>
@@ -23,7 +23,10 @@ namespace TreeGrowingAlgorithm
             get { return particles; }
         }
 
-      
+        protected override void OnRandomSeedChanged()
+        {
+            rnd = new Random(RandomSeed);
+        }
 
         [ReadOnly(true)]
         [Browsable(false)]
@@ -35,6 +38,13 @@ namespace TreeGrowingAlgorithm
 
         public void BuildTree()
         {
+
+            if (RandomSeed == 0)
+                rnd = new Random();
+            else
+                rnd = new Random(RandomSeed);
+
+
             // clear all current particles
             particles.Clear();
 
@@ -67,8 +77,10 @@ namespace TreeGrowingAlgorithm
 
         public void NextIteration()
         {
+            var particlesCopy = particles.ToArray();
+            particles.Clear();
             // iterate over copy of all particles
-            foreach (Particle2D p in particles.ToArray())
+            foreach (Particle2D p in particlesCopy)
             {
                 // if the particle still lives
                 if (p.Life > 0)
@@ -84,17 +96,18 @@ namespace TreeGrowingAlgorithm
                         if (changed)
                         {
                             // set the color of the particle on the position
-                            image[(int)p.Location.X, (int)p.Location.Y] =  p.Color;
+                            image[(int)p.Location.X, (int)p.Location.Y] = p.Color;
                             // raise the pixel set event
                             OnPixelSet(p);
                         }
                     }
 
-
+                    particles.Add(p);
                 }
-                else // else it's dead, remove the particle
-                    particles.Remove(p);
+                //else // else it's dead, remove the particle
+                    //particles.Remove(p);
             }
+
         }
 
         /// <summary>
