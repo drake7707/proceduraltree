@@ -1,8 +1,12 @@
-**Project Description**
+## Project Description
 Procedurally generate 2D or 3D trees using multiple particles with defined behaviours.
 
+## Demo
 
-**Screenshots**
+HTML/Javascript ports are created by Copilot (Claude): https://drake7707.github.io/proceduraltree/ 
+
+## Screenshots
+
 ![](http://i.imgur.com/VS6z6M5.png)
 ![](http://i.imgur.com/x1CorXE.png)
 
