@@ -497,11 +497,11 @@
       );
       if (maxTrunkLife <= 0) return;
 
-      const nrSpawn        = 720;
+      const spawnCount      = 720;
       const trunkRotatedOnZ = rotateZ(trunk.direction, -Math.PI / 2);
 
-      for (let i = 0; i < nrSpawn; i++) {
-        const angle = (i / nrSpawn) * 2 * Math.PI;
+      for (let i = 0; i < spawnCount; i++) {
+        const angle = (i / spawnCount) * 2 * Math.PI;
         const dir   = rotateY(rotateZ(trunkRotatedOnZ, angle), angle);
         particles.push(makeParticle(
           trunk.location.x, trunk.location.y, trunk.location.z,
