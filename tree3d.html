@@ -405,8 +405,60 @@
     let rng;
     let params;
     const BOUNDS = { width: 128, height: 128, depth: 128 };
-    // Voxel cache: flat key "x,y,z" → hex color string
-    let voxelCache = {};
+
+    // ---- Voxel instanced-cube renderer ----
+    const MAX_VOXELS  = 200_000;
+    const voxelMesh   = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial(),
+      MAX_VOXELS
+    );
+    voxelMesh.count = 0;
+    scene.add(voxelMesh);
+
+    // Cache: "x,y,z" → instance index (prevents duplicate cubes)
+    let voxelCache    = {};
+    let voxelCount    = 0;
+    let lastFlushed   = 0;
+
+    const _dummy      = new THREE.Object3D();
+    const _tmpColor   = new THREE.Color();
+    const _colorCache = {};
+
+    function hexToColor(hex) {
+      if (!_colorCache[hex]) _colorCache[hex] = new THREE.Color(hex);
+      return _colorCache[hex];
+    }
+
+    function setVoxel(x, y, z, hex) {
+      const key = `${x},${y},${z}`;
+      if (voxelCache[key] !== undefined) return;
+      if (voxelCount >= MAX_VOXELS) return;
+
+      const idx = voxelCount++;
+      voxelCache[key] = idx;
+
+      _dummy.position.set(x, y, z);
+      _dummy.updateMatrix();
+      voxelMesh.setMatrixAt(idx, _dummy.matrix);
+      voxelMesh.setColorAt(idx, hexToColor(hex));
+    }
+
+    function flushGeometry() {
+      if (voxelCount === lastFlushed) return;
+      const newCount = voxelCount - lastFlushed;
+
+      voxelMesh.instanceMatrix.updateRange.offset = lastFlushed * 16;
+      voxelMesh.instanceMatrix.updateRange.count  = newCount * 16;
+      voxelMesh.instanceMatrix.needsUpdate = true;
+
+      voxelMesh.instanceColor.updateRange.offset = lastFlushed * 3;
+      voxelMesh.instanceColor.updateRange.count  = newCount * 3;
+      voxelMesh.instanceColor.needsUpdate = true;
+
+      voxelMesh.count = voxelCount;
+      lastFlushed = voxelCount;
+    }
 
     // ---- Helper: read UI parameters ----
     function readParams() {
@@ -557,7 +609,10 @@
 
     // ---- Build initial tree ----
     function buildTree() {
-      voxelCache = {};
+      voxelCache  = {};
+      voxelCount  = 0;
+      lastFlushed = 0;
+      voxelMesh.count = 0;
       particles  = [
         makeParticle(
           BOUNDS.width / 2, 0, BOUNDS.depth / 2,
@@ -575,7 +630,6 @@
       for (const p of copy) {
         if (p.life <= 0) continue;
 
-        p.oldLocation = { x: p.location.x, y: p.location.y, z: p.location.z };
         p.location.x += p.direction.x;
         p.location.y += p.direction.y;
         p.location.z += p.direction.z;
@@ -590,73 +644,22 @@
         if (x >= 0 && x < BOUNDS.width &&
             y >= 0 && y < BOUNDS.height &&
             z >= 0 && z < BOUNDS.depth) {
-          voxelCache[`${x},${y},${z}`] = p.color;
+          setVoxel(x, y, z, p.color);
         }
 
         particles.push(p);
       }
     }
 
-    // ---- Rebuild Three.js geometry from voxel cache ----
-    let pointsMesh = null;
-
-    function renderVoxels() {
-      if (pointsMesh) {
-        scene.remove(pointsMesh);
-        pointsMesh.geometry.dispose();
-        pointsMesh.material.dispose();
-        pointsMesh = null;
-      }
-
-      const keys = Object.keys(voxelCache);
-      if (keys.length === 0) return;
-
-      const posArr   = new Float32Array(keys.length * 3);
-      const colorArr = new Float32Array(keys.length * 3);
-      const H        = BOUNDS.height - 1;
-      const tmpColor = new THREE.Color();
-
-      keys.forEach((key, i) => {
-        const parts = key.split(',');
-        const x = parseInt(parts[0]);
-        const y = parseInt(parts[1]);
-        const z = parseInt(parts[2]);
-        posArr[i * 3]     = x;
-        posArr[i * 3 + 1] = H - y;   // flip Y axis so tree grows upward
-        posArr[i * 3 + 2] = z;
-
-        tmpColor.set(voxelCache[key]);
-        colorArr[i * 3]     = tmpColor.r;
-        colorArr[i * 3 + 1] = tmpColor.g;
-        colorArr[i * 3 + 2] = tmpColor.b;
-      });
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(posArr,   3));
-      geometry.setAttribute('color',    new THREE.BufferAttribute(colorArr, 3));
-
-      const material = new THREE.PointsMaterial({
-        size:         1.5,
-        vertexColors: true,
-        sizeAttenuation: false,
-      });
-
-      pointsMesh = new THREE.Points(geometry, material);
-      scene.add(pointsMesh);
-    }
-
-    // ---- Simulation runner with yielding ----
+    // ---- Simulation runner ----
     let running   = false;
     let stopFlag  = false;
     let iteration = 0;
+    let rafHandle = null;
 
     const btnGenerate  = document.getElementById('btnGenerate');
     const statusEl     = document.getElementById('status');
     const progressBar  = document.getElementById('progressBar');
-
-    function scheduleStep() {
-      setTimeout(simStep, 0);
-    }
 
     function simStep() {
       if (stopFlag || iteration >= 1000 || particles.length === 0) {
@@ -665,29 +668,23 @@
       }
 
       nextIteration();
+      flushGeometry();
       iteration++;
 
       const pct = Math.min((iteration / 1000) * 100, 100);
       progressBar.style.width = `${pct}%`;
       statusEl.textContent    = `Iteration ${iteration} — ${particles.length} particles`;
 
-      scheduleStep();
+      rafHandle = requestAnimationFrame(simStep);
     }
 
     function finish() {
       running  = false;
       stopFlag = false;
-      btnGenerate.textContent  = 'Generate';
-      progressBar.style.width  = '100%';
-      statusEl.textContent     = `Done — ${iteration} iterations · Building geometry…`;
-
-      // Yield once so status updates before heavy geometry build
-      setTimeout(() => {
-        renderVoxels();
-        const voxelCount = Object.keys(voxelCache).length;
-        statusEl.textContent = `Done — ${iteration} iterations · ${voxelCount.toLocaleString()} voxels`;
-        progressBar.style.width = '0%';
-      }, 0);
+      btnGenerate.textContent = 'Generate';
+      progressBar.style.width = '0%';
+      flushGeometry();
+      statusEl.textContent = `Done — ${iteration} iterations · ${voxelCount.toLocaleString()} voxels`;
     }
 
     btnGenerate.addEventListener('click', () => {
@@ -707,7 +704,7 @@
       btnGenerate.textContent  = 'Stop';
       statusEl.textContent     = 'Simulating…';
 
-      scheduleStep();
+      rafHandle = requestAnimationFrame(simStep);
     });
   </script>
 
