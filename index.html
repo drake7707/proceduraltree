@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedural Tree</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d1a;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+    }
+
+    .hero {
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #e8e8ff;
+      text-shadow: 0 0 40px rgba(100, 160, 255, 0.3);
+    }
+
+    .hero p {
+      margin-top: 12px;
+      font-size: 1rem;
+      color: #888;
+      letter-spacing: 1px;
+    }
+
+    /* Decorative tree SVG */
+    .tree-icon {
+      display: block;
+      margin: 0 auto 24px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 32px 48px;
+      background: #16213e;
+      border: 1px solid #1e3a6e;
+      border-radius: 16px;
+      color: #c8d8f0;
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      min-width: 200px;
+    }
+
+    .btn:hover {
+      background: #1e2f5a;
+      border-color: #4a90d9;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(74, 144, 217, 0.2);
+      color: #e8f0ff;
+    }
+
+    .btn-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .btn-sub {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: #667;
+      letter-spacing: 0;
+    }
+
+    .btn:hover .btn-sub { color: #89a; }
+
+    footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 0.75rem;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <svg class="tree-icon" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="40" y1="75" x2="40" y2="45" stroke="#8B5A2B" stroke-width="5" stroke-linecap="round"/>
+      <line x1="40" y1="55" x2="22" y2="38" stroke="#6B8A3B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="40" y1="50" x2="58" y2="35" stroke="#6B8A3B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="40" y1="45" x2="28" y2="28" stroke="#5B9A2B" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="45" x2="52" y2="27" stroke="#5B9A2B" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="40" cy="22" r="14" fill="#2a6a1a" opacity="0.85"/>
+      <circle cx="22" cy="36" r="9" fill="#3a7a2a" opacity="0.8"/>
+      <circle cx="58" cy="33" r="9" fill="#3a7a2a" opacity="0.8"/>
+      <circle cx="28" cy="25" r="7" fill="#4a8a3a" opacity="0.75"/>
+      <circle cx="52" cy="24" r="7" fill="#4a8a3a" opacity="0.75"/>
+    </svg>
+    <h1>Procedural Tree</h1>
+    <p>A particle-based tree growing algorithm</p>
+  </div>
+
+  <nav class="nav-buttons">
+    <a class="btn" href="tree2d.html">
+      <span class="btn-icon">🌳</span>
+      2D Tree
+      <span class="btn-sub">Canvas · Animated growth</span>
+    </a>
+    <a class="btn" href="tree3d.html">
+      <span class="btn-icon">🌲</span>
+      3D Tree
+      <span class="btn-sub">Three.js · Voxel rendering</span>
+    </a>
+  </nav>
+
+  <footer>Ported from C# · Particle-based procedural generation</footer>
+
+</body>
+</html>

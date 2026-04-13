@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedural Tree – 2D</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0d0d1a;
+      color: #dde;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ---- Header ---- */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: #111128;
+      border-bottom: 1px solid #1e2a50;
+      flex-shrink: 0;
+    }
+
+    header a {
+      color: #6ab0f5;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    header a:hover { text-decoration: underline; }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #c8d8f0;
+    }
+
+    /* ---- Main layout ---- */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ---- Controls ---- */
+    .controls {
+      width: 268px;
+      min-width: 268px;
+      background: #111128;
+      border-right: 1px solid #1e2a50;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section { margin-bottom: 10px; }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #6ab0f5;
+      border-bottom: 1px solid #1e2a50;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+
+    .field { margin-bottom: 6px; }
+
+    .field label {
+      display: block;
+      color: #99aacc;
+      margin-bottom: 3px;
+    }
+
+    .field input[type="number"] {
+      width: 100%;
+      background: #0d1630;
+      border: 1px solid #2a3a60;
+      color: #dde;
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .field input[type="number"]:focus {
+      outline: none;
+      border-color: #4a80d0;
+    }
+
+    .field input[type="color"] {
+      width: 100%;
+      height: 28px;
+      background: #0d1630;
+      border: 1px solid #2a3a60;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 6px;
+      color: #99aacc;
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #4a80d0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ---- Buttons & status ---- */
+    #btnGenerate {
+      width: 100%;
+      padding: 9px;
+      background: #162040;
+      border: 1px solid #4a80d0;
+      border-radius: 6px;
+      color: #6ab0f5;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 8px;
+    }
+
+    #btnGenerate:hover { background: #1e2f5a; }
+    #btnGenerate:active { background: #243870; }
+
+    #status {
+      font-size: 0.75rem;
+      color: #668;
+      min-height: 1.4em;
+      word-break: break-all;
+    }
+
+    /* ---- Info tooltips ---- */
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #4a6090;
+      color: #6ab0f5;
+      font-size: 0.65rem;
+      font-style: normal;
+      cursor: help;
+      vertical-align: middle;
+      margin-left: 4px;
+      flex-shrink: 0;
+      user-select: none;
+      line-height: 1;
+    }
+
+    #tooltip {
+      position: fixed;
+      display: none;
+      z-index: 9999;
+      background: #1a2444;
+      border: 1px solid #2a3a60;
+      color: #c8d8f0;
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 5px;
+      max-width: 230px;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+
+    /* ---- Canvas area ---- */
+    .canvas-area {
+      flex: 1;
+      overflow: hidden;
+      background: #F0F0F0;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html">← Back</a>
+    <h1>2D Procedural Tree</h1>
+  </header>
+
+  <div class="main">
+
+    <div class="controls">
+
+      <div class="section">
+        <div class="section-title">Random</div>
+        <div class="field">
+          <label>Random Seed (0 = random) <span class="info-icon" data-tip="Sets a fixed seed for the rng. If 0, it will choose a random seed">i</span></label>
+          <input type="number" id="randomSeed" value="0" min="0" step="1">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Trunk</div>
+        <div class="field">
+          <label>Max Life <span class="info-icon" data-tip="Determines how much life the growing vector of the tree trunk starts with">i</span></label>
+          <input type="number" id="maxLife" value="400" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>Thick Height Ratio <span class="info-icon" data-tip="Determines how thick the trunk will be based on its height (life). E.g. a trunk of max life 400 with a thickHeightRatio of 0.02 yields a trunk 16 pixels wide (2 × thickHeightRatio × max life)">i</span></label>
+          <input type="number" id="thickHeightRatio" value="0.02" min="0" step="0.001">
+        </div>
+        <div class="field">
+          <label>Trunk Split % <span class="info-icon" data-tip="Determines how much chance there is a trunk splits in each iteration">i</span></label>
+          <input type="number" id="trunkSplitPercentage" value="0.01" min="0" max="1" step="0.001">
+        </div>
+        <div class="field">
+          <label>Trunk Split Spawn Life Decrease <span class="info-icon" data-tip="Determines how much life the growing vector of the newly created trunk spawn should have">i</span></label>
+          <input type="number" id="trunkSplitSpawnLifeDecrease" value="0.5" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Trunk Split Orig Life Decrease <span class="info-icon" data-tip="Determines how much % the life should be from the remaining life of the original trunk growing vector">i</span></label>
+          <input type="number" id="trunkSplitOrigLifeDecrease" value="1.0" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Zigzag Trunk % <span class="info-icon" data-tip="Determines how much chance there is a trunk gets nudged into a different direction. This prevents the trunk being dead straight">i</span></label>
+          <input type="number" id="zigzagTrunkPercentage" value="0.1" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Zigzag Trunk Strength (degrees) <span class="info-icon" data-tip="Determines the angle of the nudge">i</span></label>
+          <input type="number" id="zigzagTrunkStrengthDeg" value="18" min="0" max="180" step="1">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="stimulateBranchingAtEndOfLife" checked>
+          Stimulate Branching At End Of Life
+          <span class="info-icon" data-tip="If true, branching will have an increasing chance when the growing vector of the trunk reaches its end of life">i</span>
+        </label>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Branches</div>
+        <div class="field">
+          <label>Branching % <span class="info-icon" data-tip="Determines the chance that a branch or trunk will branch">i</span></label>
+          <input type="number" id="branchingPercent" value="0.2" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Branch Size Decrease <span class="info-icon" data-tip="Determines how much life the branch will spawn with based on the life of the parent. E.g. a value of 0.75 yields a branch with at most 0.75 × the parent's remaining life">i</span></label>
+          <input type="number" id="branchSizeDecrease" value="0.75" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Branch Narrowing <span class="info-icon" data-tip="Controls the angle range for spawned branches. E.g. with a factor of 0.5, sub-branches spawn at half the angle range of their parent, making the tree narrower deeper in the hierarchy">i</span></label>
+          <input type="number" id="branchNarrowing" value="0.5" min="0" max="1" step="0.01">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="applyWeightOnBranches" checked>
+          Apply Weight On Branches
+          <span class="info-icon" data-tip="If true, applies a weight to the branches so they bend downwards as they age">i</span>
+        </label>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Leaves</div>
+        <div class="field">
+          <label>Leaves % <span class="info-icon" data-tip="Determines when leaves start growing. E.g. a value of 0.2 will spawn leaves when a branch has less than 20% of its life remaining, continuing each iteration until the branch dies">i</span></label>
+          <input type="number" id="leavesPercentage" value="0.2" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Leaves Nr Spawned <span class="info-icon" data-tip="The number of leaf growing vectors spawned each iteration when leaves have to grow">i</span></label>
+          <input type="number" id="leavesNrSpawned" value="2" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Leaf Life <span class="info-icon" data-tip="The initial life of the growing vector of a leaf">i</span></label>
+          <input type="number" id="leafLife" value="5" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Colors</div>
+        <div class="field">
+          <label>Trunk Color <span class="info-icon" data-tip="Color of the trunk">i</span></label>
+          <input type="color" id="trunkColor" value="#A52A2A">
+        </div>
+        <div class="field">
+          <label>Branch Color <span class="info-icon" data-tip="Color of the branches">i</span></label>
+          <input type="color" id="branchColor" value="#A52A2A">
+        </div>
+        <div class="field">
+          <label>Leaves Color <span class="info-icon" data-tip="Color of the leaves">i</span></label>
+          <input type="color" id="leavesColor" value="#228B22">
+        </div>
+      </div>
+
+      <button id="btnGenerate">Generate</button>
+      <div id="status">Press Generate to grow a tree.</div>
+
+    </div><!-- /controls -->
+
+    <div class="canvas-area">
+      <canvas id="treeCanvas"></canvas>
+    </div>
+
+  </div><!-- /main -->
+
+  <script>
+    'use strict';
+
+    // ---- RNG (Mulberry32) ----
+    function createRng(seed) {
+      if (seed === 0) return () => Math.random();
+      let s = seed >>> 0;
+      return function () {
+        s = (s + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function randRange(rng, min, max) { return min + rng() * (max - min); }
+    function linearScale(val, min, max) { return min + val * (max - min); }
+
+    function rotate(dir, angle) {
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      return { x: cos * dir.x - sin * dir.y, y: sin * dir.x + cos * dir.y };
+    }
+
+    // ---- Canvas setup ----
+    const canvas = document.getElementById('treeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const area = canvas.parentElement;
+      const w = area.clientWidth;
+      const h = area.clientHeight;
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+    }
+
+    // ---- Simulation state (module-level so behaviours can close over them) ----
+    let particles = [];
+    let rng;
+    let params;
+
+    // ---- Helper: read UI parameters ----
+    function readParams() {
+      return {
+        randomSeed:                    parseInt(document.getElementById('randomSeed').value)                    || 0,
+        maxLife:                       parseInt(document.getElementById('maxLife').value)                       || 400,
+        thickHeightRatio:              parseFloat(document.getElementById('thickHeightRatio').value),
+        trunkSplitPercentage:          parseFloat(document.getElementById('trunkSplitPercentage').value),
+        trunkSplitSpawnLifeDecrease:   parseFloat(document.getElementById('trunkSplitSpawnLifeDecrease').value),
+        trunkSplitOrigLifeDecrease:    parseFloat(document.getElementById('trunkSplitOrigLifeDecrease').value),
+        zigzagTrunkPercentage:         parseFloat(document.getElementById('zigzagTrunkPercentage').value),
+        // convert display degrees → internal radians
+        zigzagTrunkStrength:           parseFloat(document.getElementById('zigzagTrunkStrengthDeg').value) * (Math.PI / 180),
+        stimulateBranchingAtEndOfLife: document.getElementById('stimulateBranchingAtEndOfLife').checked,
+        branchingPercent:              parseFloat(document.getElementById('branchingPercent').value),
+        branchSizeDecrease:            parseFloat(document.getElementById('branchSizeDecrease').value),
+        branchNarrowing:               parseFloat(document.getElementById('branchNarrowing').value),
+        applyWeightOnBranches:         document.getElementById('applyWeightOnBranches').checked,
+        leavesPercentage:              parseFloat(document.getElementById('leavesPercentage').value),
+        leavesNrSpawned:               parseInt(document.getElementById('leavesNrSpawned').value)  || 2,
+        leafLife:                      parseInt(document.getElementById('leafLife').value)          || 5,
+        trunkColor:                    document.getElementById('trunkColor').value,
+        branchColor:                   document.getElementById('branchColor').value,
+        leavesColor:                   document.getElementById('leavesColor').value,
+      };
+    }
+
+    // ---- Particle factory ----
+    function makeParticle(x, y, dirX, dirY, life, color, behaviour) {
+      return {
+        location:    { x, y },
+        oldLocation: { x, y },
+        direction:   { x: dirX, y: dirY },
+        life,
+        maxLife: life,
+        color,
+        behaviour,
+      };
+    }
+
+    // ---- Behaviour functions ----
+
+    function leavesBehaviour(b) {
+      if (b.life < params.leavesPercentage * b.maxLife) {
+        for (let i = 0; i < params.leavesNrSpawned; i++) {
+          particles.push(makeParticle(
+            b.location.x, b.location.y,
+            randRange(rng, -1, 1), randRange(rng, -1, 1),
+            params.leafLife, params.leavesColor, null
+          ));
+        }
+      }
+    }
+
+    function branchingBehaviour(branchingPercent, t, depth) {
+      if (rng() < branchingPercent) {
+        const narrower   = Math.pow(params.branchNarrowing, depth);
+        const initialDir = rotate(t.direction, randRange(rng, -Math.PI * narrower, Math.PI * narrower));
+        const branchLife = Math.floor(t.life * params.branchSizeDecrease);
+        if (branchLife <= 0) return;
+
+        const branch = makeParticle(
+          t.location.x, t.location.y,
+          initialDir.x, initialDir.y,
+          branchLife, params.branchColor, null
+        );
+
+        branch.behaviour = (b) => {
+          leavesBehaviour(b);
+          branchingBehaviour(branchingPercent, b, depth + 1);
+          if (params.applyWeightOnBranches && branch.maxLife > 0) {
+            b.direction = {
+              x: initialDir.x,
+              y: initialDir.y * linearScale(b.life / branch.maxLife, -1, 1),
+            };
+          }
+        };
+
+        particles.push(branch);
+      }
+    }
+
+    function trunkThickeningBehaviour(trunk) {
+      const maxTrunkLife = Math.floor(
+        (trunk.life / trunk.maxLife) * params.thickHeightRatio * trunk.maxLife
+      );
+      if (maxTrunkLife <= 0) return;
+      const perp1 = rotate(trunk.direction, -Math.PI / 2);
+      const perp2 = rotate(trunk.direction,  Math.PI / 2);
+      particles.push(makeParticle(trunk.location.x, trunk.location.y, perp1.x, perp1.y, maxTrunkLife, trunk.color, null));
+      particles.push(makeParticle(trunk.location.x, trunk.location.y, perp2.x, perp2.y, maxTrunkLife, trunk.color, null));
+    }
+
+    function trunkNudgeBehaviour(trunk) {
+      if (rng() < params.zigzagTrunkPercentage) {
+        trunk.direction = rotate(trunk.direction,
+          randRange(rng, -params.zigzagTrunkStrength, params.zigzagTrunkStrength));
+      }
+      if (trunk.direction.y < 1) trunk.direction.y += 0.1;
+      if (trunk.direction.y > 1) trunk.direction.y = 1;
+    }
+
+    function trunkSplittingBehaviour(trunk) {
+      if (rng() < params.trunkSplitPercentage) {
+        const newDir     = rotate(trunk.direction, randRange(rng, -Math.PI, Math.PI));
+        const spawnLife  = Math.floor(trunk.life * params.trunkSplitSpawnLifeDecrease);
+        if (spawnLife <= 0) return;
+
+        const secondTrunk = makeParticle(
+          trunk.location.x, trunk.location.y,
+          newDir.x, newDir.y,
+          spawnLife, trunk.color, trunk.behaviour
+        );
+        if (secondTrunk.direction.y < 0) secondTrunk.direction.y *= -1;
+        particles.push(secondTrunk);
+
+        trunk.life      = Math.floor(trunk.life * params.trunkSplitOrigLifeDecrease);
+        trunk.direction = { x: -newDir.x, y: newDir.y };
+        if (trunk.direction.y < 0) trunk.direction.y *= -1;
+      }
+    }
+
+    function trunkBehaviour(trunk) {
+      const depth = 1;
+      const scale = params.stimulateBranchingAtEndOfLife
+        ? ((trunk.maxLife - trunk.life) / trunk.maxLife) * params.branchingPercent
+        : params.branchingPercent;
+
+      branchingBehaviour(scale, trunk, depth);
+      leavesBehaviour(trunk);
+      trunkThickeningBehaviour(trunk);
+      trunkNudgeBehaviour(trunk);
+      trunkSplittingBehaviour(trunk);
+    }
+
+    // ---- Build initial tree ----
+    function buildTree() {
+      particles = [
+        makeParticle(
+          canvas.width / 2, 0,
+          0, 1,
+          params.maxLife, params.trunkColor, trunkBehaviour
+        ),
+      ];
+    }
+
+    // ---- One simulation step ----
+    function nextIteration() {
+      const copy = particles;
+      particles = [];
+
+      // Collect draw calls first so canvas batching is efficient
+      const drawList = [];
+
+      for (const p of copy) {
+        if (p.life <= 0) continue;
+
+        p.oldLocation = { x: p.location.x, y: p.location.y };
+        p.location.x += p.direction.x;
+        p.location.y += p.direction.y;
+        p.life--;
+
+        if (p.behaviour) p.behaviour(p);
+
+        const ox = p.oldLocation.x, oy = p.oldLocation.y;
+        const nx = p.location.x,    ny = p.location.y;
+        const H  = canvas.height - 1;
+
+        // At least one endpoint must be on-canvas
+        const oxc = Math.round(ox), oyc = Math.round(oy);
+        const nxc = Math.round(nx), nyc = Math.round(ny);
+        const oxOk = oxc >= 0 && oxc < canvas.width && oyc >= 0 && oyc < canvas.height;
+        const nxOk = nxc >= 0 && nxc < canvas.width && nyc >= 0 && nyc < canvas.height;
+
+        if (oxOk || nxOk) {
+          drawList.push(ox, H - oy, nx, H - ny, p.color);
+        }
+
+        particles.push(p);
+      }
+
+      // Batch canvas draws grouped by color
+      let i = 0;
+      while (i < drawList.length) {
+        const color = drawList[i + 4];
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth   = 2;
+        // Collect all consecutive segments of same color
+        while (i < drawList.length && drawList[i + 4] === color) {
+          ctx.moveTo(drawList[i],     drawList[i + 1]);
+          ctx.lineTo(drawList[i + 2], drawList[i + 3]);
+          i += 5;
+        }
+        ctx.stroke();
+      }
+    }
+
+    // ---- Animation loop ----
+    let running   = false;
+    let stopFlag  = false;
+    let iteration = 0;
+    let rafHandle = null;
+
+    const btnGenerate = document.getElementById('btnGenerate');
+    const statusEl    = document.getElementById('status');
+
+    function step() {
+      if (stopFlag || iteration >= 1000 || particles.length === 0) {
+        finish();
+        return;
+      }
+      statusEl.textContent = `Iteration ${iteration} — ${particles.length} particles`;
+      nextIteration();
+      iteration++;
+      rafHandle = requestAnimationFrame(step);
+    }
+
+    function finish() {
+      running  = false;
+      stopFlag = false;
+      btnGenerate.textContent = 'Generate';
+      statusEl.textContent = `Done — ${iteration} iterations`;
+    }
+
+    btnGenerate.addEventListener('click', () => {
+      if (running) {
+        stopFlag = true;
+        return;
+      }
+
+      params = readParams();
+      rng    = createRng(params.randomSeed);
+
+      resizeCanvas();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      buildTree();
+      iteration = 0;
+      running   = true;
+      stopFlag  = false;
+      btnGenerate.textContent = 'Stop';
+      statusEl.textContent    = 'Growing…';
+      rafHandle = requestAnimationFrame(step);
+    });
+
+    // Keep canvas sized to its container on window resize.
+    // If not running, just repaint black; running simulation
+    // will naturally draw into the new dimensions next frame.
+    window.addEventListener('resize', () => {
+      if (!running) resizeCanvas();
+    });
+
+    // ---- Tooltip wiring ----
+    const tooltip = document.getElementById('tooltip');
+
+    function positionTooltip(e) {
+      const pad = 12;
+      const tw  = tooltip.offsetWidth;
+      const th  = tooltip.offsetHeight;
+      let x = e.clientX + pad;
+      let y = e.clientY + pad;
+      if (x + tw > window.innerWidth  - pad) x = e.clientX - tw - pad;
+      if (y + th > window.innerHeight - pad) y = e.clientY - th - pad;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top  = y + 'px';
+    }
+
+    document.querySelectorAll('.info-icon').forEach(el => {
+      el.addEventListener('mouseenter', e => {
+        tooltip.textContent   = el.dataset.tip;
+        tooltip.style.display = 'block';
+        positionTooltip(e);
+      });
+      el.addEventListener('mousemove', positionTooltip);
+      el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    });
+  </script>
+
+  <div id="tooltip"></div>
+
+</body>
+</html>
