@@ -372,10 +372,10 @@
 
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
-    camera.position.set(96, 48, -96);
+    camera.position.set(180, 90, 180);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(64, 64, 64);
+    controls.target.set(64, 32, 64);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.update();
