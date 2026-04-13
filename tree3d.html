@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedural Tree – 3D</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0d0d1a;
+      color: #dde;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ---- Header ---- */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: #111128;
+      border-bottom: 1px solid #1e2a50;
+      flex-shrink: 0;
+    }
+
+    header a {
+      color: #6ab0f5;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    header a:hover { text-decoration: underline; }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #c8d8f0;
+    }
+
+    /* ---- Main layout ---- */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ---- Controls ---- */
+    .controls {
+      width: 268px;
+      min-width: 268px;
+      background: #111128;
+      border-right: 1px solid #1e2a50;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section { margin-bottom: 10px; }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #6ab0f5;
+      border-bottom: 1px solid #1e2a50;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+
+    .field { margin-bottom: 6px; }
+
+    .field label {
+      display: block;
+      color: #99aacc;
+      margin-bottom: 3px;
+    }
+
+    .field input[type="number"] {
+      width: 100%;
+      background: #0d1630;
+      border: 1px solid #2a3a60;
+      color: #dde;
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .field input[type="number"]:focus {
+      outline: none;
+      border-color: #4a80d0;
+    }
+
+    .field input[type="color"] {
+      width: 100%;
+      height: 28px;
+      background: #0d1630;
+      border: 1px solid #2a3a60;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 6px;
+      color: #99aacc;
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #4a80d0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ---- Button & status ---- */
+    #btnGenerate {
+      width: 100%;
+      padding: 9px;
+      background: #162040;
+      border: 1px solid #4a80d0;
+      border-radius: 6px;
+      color: #6ab0f5;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 8px;
+    }
+
+    #btnGenerate:hover { background: #1e2f5a; }
+    #btnGenerate:active { background: #243870; }
+
+    .progress-wrap {
+      height: 6px;
+      background: #1e2a50;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: #4a90d9;
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    #status {
+      font-size: 0.75rem;
+      color: #668;
+      min-height: 1.4em;
+      word-break: break-all;
+    }
+
+    /* ---- 3D Viewport ---- */
+    .canvas-area {
+      flex: 1;
+      overflow: hidden;
+      background: #1a1a2e;
+      position: relative;
+    }
+
+    #rendererContainer {
+      width: 100%;
+      height: 100%;
+    }
+
+    #rendererContainer canvas {
+      display: block;
+    }
+
+    #hint {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      font-size: 0.72rem;
+      color: #446;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html">← Back</a>
+    <h1>3D Procedural Tree</h1>
+  </header>
+
+  <div class="main">
+
+    <div class="controls">
+
+      <div class="section">
+        <div class="section-title">Random</div>
+        <div class="field">
+          <label>Random Seed (0 = random)</label>
+          <input type="number" id="randomSeed" value="0" min="0" step="1">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Trunk</div>
+        <div class="field">
+          <label>Max Life</label>
+          <input type="number" id="maxLife" value="64" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>Thick Height Ratio</label>
+          <input type="number" id="thickHeightRatio" value="0.05" min="0" step="0.001">
+        </div>
+        <div class="field">
+          <label>Trunk Split %</label>
+          <input type="number" id="trunkSplitPercentage" value="0.01" min="0" max="1" step="0.001">
+        </div>
+        <div class="field">
+          <label>Trunk Split Spawn Life Decrease</label>
+          <input type="number" id="trunkSplitSpawnLifeDecrease" value="0.5" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Trunk Split Orig Life Decrease</label>
+          <input type="number" id="trunkSplitOrigLifeDecrease" value="1.0" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Zigzag Trunk %</label>
+          <input type="number" id="zigzagTrunkPercentage" value="0.1" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Zigzag Trunk Strength (degrees)</label>
+          <input type="number" id="zigzagTrunkStrengthDeg" value="18" min="0" max="180" step="1">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="stimulateBranchingAtEndOfLife" checked>
+          Stimulate Branching At End Of Life
+        </label>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Branches</div>
+        <div class="field">
+          <label>Branching %</label>
+          <input type="number" id="branchingPercent" value="0.3" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Branch Size Decrease</label>
+          <input type="number" id="branchSizeDecrease" value="0.75" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Branch Narrowing</label>
+          <input type="number" id="branchNarrowing" value="0.5" min="0" max="1" step="0.01">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="applyWeightOnBranches" checked>
+          Apply Weight On Branches
+        </label>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Leaves</div>
+        <div class="field">
+          <label>Leaves %</label>
+          <input type="number" id="leavesPercentage" value="0.2" min="0" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Leaves Nr Spawned</label>
+          <input type="number" id="leavesNrSpawned" value="2" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Leaf Life</label>
+          <input type="number" id="leafLife" value="5" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Colors</div>
+        <div class="field">
+          <label>Trunk Color</label>
+          <input type="color" id="trunkColor" value="#A52A2A">
+        </div>
+        <div class="field">
+          <label>Branch Color</label>
+          <input type="color" id="branchColor" value="#A52A2A">
+        </div>
+        <div class="field">
+          <label>Leaves Color</label>
+          <input type="color" id="leavesColor" value="#228B22">
+        </div>
+      </div>
+
+      <button id="btnGenerate">Generate</button>
+
+      <div class="progress-wrap">
+        <div id="progressBar"></div>
+      </div>
+      <div id="status">Press Generate to grow a tree.</div>
+
+    </div><!-- /controls -->
+
+    <div class="canvas-area">
+      <div id="rendererContainer"></div>
+      <div id="hint">Drag to orbit · Scroll to zoom</div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- Three.js r160 via importmap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    'use strict';
+
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---- RNG (Mulberry32) ----
+    function createRng(seed) {
+      if (seed === 0) return () => Math.random();
+      let s = seed >>> 0;
+      return function () {
+        s = (s + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function randRange(rng, min, max) { return min + rng() * (max - min); }
+    function linearScale(val, min, max) { return min + val * (max - min); }
+
+    // ---- 3D Vector math ----
+    function rotateZ(dir, angle) {
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      return { x: cos * dir.x - sin * dir.y, y: sin * dir.x + cos * dir.y, z: dir.z };
+    }
+
+    function rotateY(dir, angle) {
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      return { x: cos * dir.x + sin * dir.z, y: dir.y, z: -sin * dir.x + cos * dir.z };
+    }
+
+    // ---- Three.js scene setup ----
+    const container = document.getElementById('rendererContainer');
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x1a1a2e);
+    container.appendChild(renderer.domElement);
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
+    camera.position.set(96, 48, -96);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(64, 64, 64);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.update();
+
+    // Size the renderer to fill the container
+    function resizeRenderer() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    resizeRenderer();
+    window.addEventListener('resize', resizeRenderer);
+
+    // Render loop (keeps OrbitControls damping smooth)
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    renderLoop();
+
+    // ---- Simulation state ----
+    let particles = [];
+    let rng;
+    let params;
+    const BOUNDS = { width: 128, height: 128, depth: 128 };
+    // Voxel cache: flat key "x,y,z" → hex color string
+    let voxelCache = {};
+
+    // ---- Helper: read UI parameters ----
+    function readParams() {
+      return {
+        randomSeed:                    parseInt(document.getElementById('randomSeed').value)                    || 0,
+        maxLife:                       parseInt(document.getElementById('maxLife').value)                       || 64,
+        thickHeightRatio:              parseFloat(document.getElementById('thickHeightRatio').value),
+        trunkSplitPercentage:          parseFloat(document.getElementById('trunkSplitPercentage').value),
+        trunkSplitSpawnLifeDecrease:   parseFloat(document.getElementById('trunkSplitSpawnLifeDecrease').value),
+        trunkSplitOrigLifeDecrease:    parseFloat(document.getElementById('trunkSplitOrigLifeDecrease').value),
+        zigzagTrunkPercentage:         parseFloat(document.getElementById('zigzagTrunkPercentage').value),
+        zigzagTrunkStrength:           parseFloat(document.getElementById('zigzagTrunkStrengthDeg').value) * (Math.PI / 180),
+        stimulateBranchingAtEndOfLife: document.getElementById('stimulateBranchingAtEndOfLife').checked,
+        branchingPercent:              parseFloat(document.getElementById('branchingPercent').value),
+        branchSizeDecrease:            parseFloat(document.getElementById('branchSizeDecrease').value),
+        branchNarrowing:               parseFloat(document.getElementById('branchNarrowing').value),
+        applyWeightOnBranches:         document.getElementById('applyWeightOnBranches').checked,
+        leavesPercentage:              parseFloat(document.getElementById('leavesPercentage').value),
+        leavesNrSpawned:               parseInt(document.getElementById('leavesNrSpawned').value)  || 2,
+        leafLife:                      parseInt(document.getElementById('leafLife').value)          || 5,
+        trunkColor:                    document.getElementById('trunkColor').value,
+        branchColor:                   document.getElementById('branchColor').value,
+        leavesColor:                   document.getElementById('leavesColor').value,
+      };
+    }
+
+    // ---- Particle factory ----
+    function makeParticle(x, y, z, dirX, dirY, dirZ, life, color, behaviour) {
+      return {
+        location:    { x, y, z },
+        oldLocation: { x, y, z },
+        direction:   { x: dirX, y: dirY, z: dirZ },
+        life,
+        maxLife: life,
+        color,
+        behaviour,
+      };
+    }
+
+    // ---- 3D Behaviour functions ----
+
+    function leavesBehaviour(b) {
+      if (b.life < params.leavesPercentage * b.maxLife) {
+        for (let i = 0; i < params.leavesNrSpawned; i++) {
+          particles.push(makeParticle(
+            b.location.x, b.location.y, b.location.z,
+            randRange(rng, -1, 1), randRange(rng, -1, 1), randRange(rng, -1, 1),
+            params.leafLife, params.leavesColor, null
+          ));
+        }
+      }
+    }
+
+    function branchingBehaviour(branchingPercent, t, depth) {
+      if (rng() < branchingPercent) {
+        const narrower  = Math.pow(params.branchNarrowing, depth);
+        const angle1    = randRange(rng, -Math.PI * narrower, Math.PI * narrower);
+        const angle2    = randRange(rng, 0, 2 * Math.PI);
+        const initialDir = rotateZ(rotateY(t.direction, angle1), angle2);
+        const branchLife = Math.floor(t.life * params.branchSizeDecrease);
+        if (branchLife <= 0) return;
+
+        const branch = makeParticle(
+          t.location.x, t.location.y, t.location.z,
+          initialDir.x, initialDir.y, initialDir.z,
+          branchLife, params.branchColor, null
+        );
+
+        branch.behaviour = (b) => {
+          leavesBehaviour(b);
+          branchingBehaviour(branchingPercent, b, depth + 1);
+          if (params.applyWeightOnBranches && branch.maxLife > 0) {
+            b.direction = {
+              x: initialDir.x,
+              y: initialDir.y * linearScale(b.life / branch.maxLife, -1, 1),
+              z: initialDir.z,
+            };
+          }
+        };
+
+        particles.push(branch);
+      }
+    }
+
+    function trunkThickeningBehaviour(trunk) {
+      const maxTrunkLife = Math.floor(
+        (trunk.life / trunk.maxLife) * params.thickHeightRatio * trunk.maxLife
+      );
+      if (maxTrunkLife <= 0) return;
+
+      const nrSpawn        = 720;
+      const trunkRotatedOnZ = rotateZ(trunk.direction, -Math.PI / 2);
+
+      for (let i = 0; i < nrSpawn; i++) {
+        const angle = (i / nrSpawn) * 2 * Math.PI;
+        const dir   = rotateY(rotateZ(trunkRotatedOnZ, angle), angle);
+        particles.push(makeParticle(
+          trunk.location.x, trunk.location.y, trunk.location.z,
+          dir.x, dir.y, dir.z,
+          maxTrunkLife, trunk.color, null
+        ));
+      }
+    }
+
+    function trunkNudgeBehaviour(trunk) {
+      if (rng() < params.zigzagTrunkPercentage) {
+        const zAngle = randRange(rng, -params.zigzagTrunkStrength, params.zigzagTrunkStrength);
+        const yAngle = randRange(rng, 0, 2 * Math.PI);
+        trunk.direction = rotateY(rotateZ(trunk.direction, zAngle), yAngle);
+      }
+      if (trunk.direction.y < 1) trunk.direction.y += 0.1;
+      if (trunk.direction.y > 1) trunk.direction.y = 1;
+    }
+
+    function trunkSplittingBehaviour(trunk) {
+      if (rng() < params.trunkSplitPercentage) {
+        const zAngle = randRange(rng, -Math.PI, Math.PI);
+        const yAngle = randRange(rng, 0, 2 * Math.PI);
+        const newDir = rotateY(rotateZ(trunk.direction, zAngle), yAngle);
+
+        const spawnLife = Math.floor(trunk.life * params.trunkSplitSpawnLifeDecrease);
+        if (spawnLife <= 0) return;
+
+        const secondTrunk = makeParticle(
+          trunk.location.x, trunk.location.y, trunk.location.z,
+          newDir.x, newDir.y, newDir.z,
+          spawnLife, trunk.color, trunk.behaviour
+        );
+        if (secondTrunk.direction.y < 0) secondTrunk.direction.y *= -1;
+        particles.push(secondTrunk);
+
+        trunk.life      = Math.floor(trunk.life * params.trunkSplitOrigLifeDecrease);
+        trunk.direction = { x: -newDir.x, y: newDir.y, z: -newDir.z };
+        if (trunk.direction.y < 0) trunk.direction.y *= -1;
+      }
+    }
+
+    function trunkBehaviour(trunk) {
+      const depth = 1;
+      const scale = params.stimulateBranchingAtEndOfLife
+        ? ((trunk.maxLife - trunk.life) / trunk.maxLife) * params.branchingPercent
+        : params.branchingPercent;
+
+      branchingBehaviour(scale, trunk, depth);
+      leavesBehaviour(trunk);
+      trunkThickeningBehaviour(trunk);
+      trunkNudgeBehaviour(trunk);
+      trunkSplittingBehaviour(trunk);
+    }
+
+    // ---- Build initial tree ----
+    function buildTree() {
+      voxelCache = {};
+      particles  = [
+        makeParticle(
+          BOUNDS.width / 2, 0, BOUNDS.depth / 2,
+          0, 1, 0,
+          params.maxLife, params.trunkColor, trunkBehaviour
+        ),
+      ];
+    }
+
+    // ---- One simulation step ----
+    function nextIteration() {
+      const copy = particles;
+      particles = [];
+
+      for (const p of copy) {
+        if (p.life <= 0) continue;
+
+        p.oldLocation = { x: p.location.x, y: p.location.y, z: p.location.z };
+        p.location.x += p.direction.x;
+        p.location.y += p.direction.y;
+        p.location.z += p.direction.z;
+        p.life--;
+
+        if (p.behaviour) p.behaviour(p);
+
+        const x = Math.round(p.location.x);
+        const y = Math.round(p.location.y);
+        const z = Math.round(p.location.z);
+
+        if (x >= 0 && x < BOUNDS.width &&
+            y >= 0 && y < BOUNDS.height &&
+            z >= 0 && z < BOUNDS.depth) {
+          voxelCache[`${x},${y},${z}`] = p.color;
+        }
+
+        particles.push(p);
+      }
+    }
+
+    // ---- Rebuild Three.js geometry from voxel cache ----
+    let pointsMesh = null;
+
+    function renderVoxels() {
+      if (pointsMesh) {
+        scene.remove(pointsMesh);
+        pointsMesh.geometry.dispose();
+        pointsMesh.material.dispose();
+        pointsMesh = null;
+      }
+
+      const keys = Object.keys(voxelCache);
+      if (keys.length === 0) return;
+
+      const posArr   = new Float32Array(keys.length * 3);
+      const colorArr = new Float32Array(keys.length * 3);
+      const H        = BOUNDS.height - 1;
+      const tmpColor = new THREE.Color();
+
+      keys.forEach((key, i) => {
+        const parts = key.split(',');
+        const x = parseInt(parts[0]);
+        const y = parseInt(parts[1]);
+        const z = parseInt(parts[2]);
+        posArr[i * 3]     = x;
+        posArr[i * 3 + 1] = H - y;   // flip Y axis so tree grows upward
+        posArr[i * 3 + 2] = z;
+
+        tmpColor.set(voxelCache[key]);
+        colorArr[i * 3]     = tmpColor.r;
+        colorArr[i * 3 + 1] = tmpColor.g;
+        colorArr[i * 3 + 2] = tmpColor.b;
+      });
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(posArr,   3));
+      geometry.setAttribute('color',    new THREE.BufferAttribute(colorArr, 3));
+
+      const material = new THREE.PointsMaterial({
+        size:         1.5,
+        vertexColors: true,
+        sizeAttenuation: false,
+      });
+
+      pointsMesh = new THREE.Points(geometry, material);
+      scene.add(pointsMesh);
+    }
+
+    // ---- Simulation runner with yielding ----
+    let running   = false;
+    let stopFlag  = false;
+    let iteration = 0;
+
+    const btnGenerate  = document.getElementById('btnGenerate');
+    const statusEl     = document.getElementById('status');
+    const progressBar  = document.getElementById('progressBar');
+
+    function scheduleStep() {
+      setTimeout(simStep, 0);
+    }
+
+    function simStep() {
+      if (stopFlag || iteration >= 1000 || particles.length === 0) {
+        finish();
+        return;
+      }
+
+      nextIteration();
+      iteration++;
+
+      const pct = Math.min((iteration / 1000) * 100, 100);
+      progressBar.style.width = `${pct}%`;
+      statusEl.textContent    = `Iteration ${iteration} — ${particles.length} particles`;
+
+      scheduleStep();
+    }
+
+    function finish() {
+      running  = false;
+      stopFlag = false;
+      btnGenerate.textContent  = 'Generate';
+      progressBar.style.width  = '100%';
+      statusEl.textContent     = `Done — ${iteration} iterations · Building geometry…`;
+
+      // Yield once so status updates before heavy geometry build
+      setTimeout(() => {
+        renderVoxels();
+        const voxelCount = Object.keys(voxelCache).length;
+        statusEl.textContent = `Done — ${iteration} iterations · ${voxelCount.toLocaleString()} voxels`;
+        progressBar.style.width = '0%';
+      }, 0);
+    }
+
+    btnGenerate.addEventListener('click', () => {
+      if (running) {
+        stopFlag = true;
+        return;
+      }
+
+      params = readParams();
+      rng    = createRng(params.randomSeed);
+
+      buildTree();
+      iteration = 0;
+      running   = true;
+      stopFlag  = false;
+      progressBar.style.width  = '0%';
+      btnGenerate.textContent  = 'Stop';
+      statusEl.textContent     = 'Simulating…';
+
+      scheduleStep();
+    });
+  </script>
+
+</body>
+</html>
